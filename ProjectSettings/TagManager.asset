@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Bounds
+  - Enemy
+  - Boss
+  - Managers
   layers:
   - Default
   - TransparentFX
@@ -20,11 +23,11 @@ TagManager:
   - Foreground
   - Enemy
   - UI Numbers
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Ground
+  - Patrol
+  - CameraBounds
+  - PlayerCollisionCheck
+  - BuffTriggerCheck
   - 
   - 
   - 
@@ -45,8 +48,17 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Enemy
+    uniqueID: 964014459
+    locked: 0
   - name: Player
     uniqueID: 1529022059
+    locked: 0
+  - name: PlayerCollisionCheck
+    uniqueID: 1161921551
+    locked: 0
+  - name: Ground
+    uniqueID: 2418864409
     locked: 0
   - name: Foreground
     uniqueID: 1394609115

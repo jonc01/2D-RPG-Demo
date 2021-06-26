@@ -5,21 +5,33 @@ using TMPro;
 
 public class StationaryEnemy : MonoBehaviour
 {
+    //Text Popups
+    public GameObject TextPopupsPrefab;
+    public TextPopupsHandler TextPopupsHandler;
+    [SerializeField] Vector3 TPOffset = new Vector3(0, .2f, 0);
+    public HitEffectsHandler HitEffectsHandler;
+
     //this is for support stationary enemies, can make non-support stationary separate
     //this script only targets enemies that are "friendly" to this object, and heals them
-    public GameObject TextPopupsPrefab;
-    public Transform player;
+
+
     public LayerMask playerLayers;
-    public Transform enemyAllies;
+    public Transform player;
+    public PlayerCombat playerCombat;
     public LayerMask enemyLayers;
+    public GameObject HitToRight;
+    public GameObject HitToLeft;
+    //public GameObject HitEffect;
+    public GameObject deathParticlePrefab;
 
     public float maxHealth = 100;
     float currentHealth;
     public HealthBar healthBar;
 
-    int experiencePoints = 10;
+    public int experiencePoints = 20;
     public Animator enAnimator;
     public bool isAlive;
+
 
     [SerializeField]
     public Rigidbody2D rb;
@@ -34,11 +46,25 @@ public class StationaryEnemy : MonoBehaviour
     public float enAttackAnimSpeed = .7f; //lower value for shorter animations
     bool enCanAttack = true;
 
+    SpriteRenderer sr;
+    [SerializeField]
+    private Material mWhiteFlash;
+    private Material mDefault;
+
     void Start()
     {
+        sr = GetComponent<SpriteRenderer>();
+        mDefault = sr.material;
+
+        player = GameObject.Find("Player").transform;
+
         //Stats
         currentHealth = maxHealth;
-        healthBar.SetMaxHealth(maxHealth);
+        if (healthBar != null)
+        {
+            healthBar.SetMaxHealth(maxHealth);
+        }
+
         isAlive = true;
         enCanAttack = true;
         //AI aggro
@@ -48,22 +74,9 @@ public class StationaryEnemy : MonoBehaviour
 
     void Update()
     {
-        if (rb != null && enController != null && isAlive && enemyAllies != null) //check if object has rigidbody
+        if (rb != null && enController != null && isAlive) //check if object has rigidbody
         {
-            //checking distance to player for aggro range
-            float distToPlayer = Vector2.Distance(transform.position, enemyAllies.position);
 
-            //range <= 3
-            if (distToPlayer <= aggroRange)
-            {
-                Debug.Log("Stationary enemy attacking...");
-                StartCoroutine(IsAttacking());
-                //enCanAttack = true;
-            }
-            else
-            {
-                //StopChase();
-            }
         }
         else if (!isAlive)
         {
@@ -71,21 +84,18 @@ public class StationaryEnemy : MonoBehaviour
             if (rb != null)
                 rb.velocity = new Vector2(0, 0);
         }
-
     }
-
 
     void Attack() //for Stationary, can be buffing abilities, ex: totem
     {
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(enAttackPoint.position, enAttackRange, enemyLayers);
+        //Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(enAttackPoint.position, enAttackRange, enemyLayers);
         //                                                                                  targetting enemy allies only
         //damage enemies
-        foreach (Collider2D enemy in hitEnemies) //loop through enemies hit
+        /*foreach (Collider2D enemy in hitEnemies) //loop through enemies hit
         {
-            Debug.Log("We are healing " + enemy.name);
-            if(enemy != null && enemy.GetComponent<Enemy>() != null)
-                enemy.GetComponent<Enemy>().TakeDamage(-enAttackDamage); //negative damage for healing don't need Heal() function
-        }
+            //if(enemy != null && enemy.GetComponent<Enemy>() != null)
+            //enemy.GetComponent<Enemy>().TakeDamage(-enAttackDamage); //negative damage for healing don't need Heal() function
+        }*/
     }
 
     IEnumerator IsAttacking()
@@ -116,22 +126,47 @@ public class StationaryEnemy : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        if (enAttackPoint == null)
+        /*if (enAttackPoint == null)
             return;
 
-        Gizmos.DrawWireSphere(enAttackPoint.position, enAttackRange);
+        Gizmos.DrawWireSphere(enAttackPoint.position, enAttackRange);*/
     }
 
-    public void TakeDamage(float damage)
+    public void TakeDamage(float damage, float damageMultiplier = 1.0f)
     {
         if (isAlive == true)
         {
-            currentHealth -= damage;
+            float damageTaken = damage * damageMultiplier;
+            currentHealth -= damageTaken;
             healthBar.SetHealth(currentHealth);
+            if (currentHealth > maxHealth)
+                currentHealth = maxHealth;
+
+            Vector3 changeLocation = GetComponent<Transform>().position;
+
+            Vector3 tempLocation = changeLocation;
+            //tempLocation.y += .0f; //y offset
+            if(player.position.x > transform.position.x) //player to right of enemy
+            {
+                Instantiate(HitToLeft, tempLocation, Quaternion.identity);
+            }
+            else
+            {
+                Instantiate(HitToRight, tempLocation, Quaternion.identity);
+            }
+
+            //Instantiate(HitEffect, tempLocation, Quaternion.identity);
+            HitEffectsHandler.ShowHitEffect(tempLocation);
+
+            sr.material = mWhiteFlash; //flashing enemy sprite
+            Invoke("ResetMaterial", .1f);
+
             //show damage/heal numbers
             if (TextPopupsPrefab)
             {
-                ShowTextPopup(damage);
+                Vector3 tempPos = transform.position;
+                tempPos += TPOffset;
+                TextPopupsHandler.ShowDamage(damageTaken, tempPos);
             }
             
             //hurt animation
@@ -139,6 +174,7 @@ public class StationaryEnemy : MonoBehaviour
             {
                 enAnimator.SetTrigger("Hurt");
             }
+        
             if (currentHealth <= 0)
             {
                 Die();
@@ -146,25 +182,14 @@ public class StationaryEnemy : MonoBehaviour
         }
     }
 
-    void ShowTextPopup(float damageAmount)
+    void ResetMaterial()
     {
-        var showDmg = Instantiate(TextPopupsPrefab, transform.position, Quaternion.identity, transform);
-        showDmg.GetComponent<TextMeshPro>().text = damageAmount.ToString();
-
-        /*if (enController.enFacingRight) //player facing right by default
-            showDmg.transform.Rotate(0f, 0f, 0f);*/
-
-    }
-
-    public void GiveExperience(int experiencePoints)
-    {
-        Debug.Log("Give player " + experiencePoints + " XP");
-        //give xp
-        //
+        sr.material = mDefault;
     }
 
     void Die()
     {
+        isAlive = false;
         //Die animation
         if (enAnimator != null)
         {
@@ -172,20 +197,35 @@ public class StationaryEnemy : MonoBehaviour
         }
 
         //give player exp
-        GiveExperience(experiencePoints);
+        playerCombat.GiveXP(experiencePoints);
 
         //hide hp bar
-        //GetComponent
+
 
         //disable enemy object
         isAlive = false;
 
-        StartCoroutine(DeleteEnemyObject());
+        if (deathParticlePrefab != null)
+        {
+            Vector3 changeLocation = GetComponent<Transform>().position;
+            Vector3 tempLocation = changeLocation;
+            tempLocation.y -= .1f;
+            Instantiate(deathParticlePrefab, tempLocation, Quaternion.identity);
+        }
+
+        DeleteEnemyObject();
+
+        //StartCoroutine(DeleteEnemyObject());
     }
 
-    IEnumerator DeleteEnemyObject()
+    /*IEnumerator DeleteEnemyObject()
     {
         yield return new WaitForSeconds(3f);
+        Destroy(this.gameObject);
+    }*/
+
+    private void DeleteEnemyObject()
+    {
         Destroy(this.gameObject);
     }
 }

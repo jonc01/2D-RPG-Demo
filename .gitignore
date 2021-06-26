@@ -5,12 +5,13 @@
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
+/[Bb]uild/
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 /[Mm]emoryCaptures/
 
-# Asset meta data should only be ignored when the corresponding asset is also ignored
+# Never ignore Asset meta data
 !/[Aa]ssets/**/*.meta
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
@@ -43,6 +44,7 @@ ExportedObj/
 *.opendb
 *.VC.db
 
+
 # Unity3D generated meta files
 *.pidb.meta
 *.pdb.meta
@@ -53,14 +55,8 @@ sysinfo.txt
 
 # Builds
 *.apk
-	*.aab
 *.unitypackage
 
 # Crashlytics generated file
 crashlytics-build.properties
 
-	# Packed Addressables	
-/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*	
-# Temporary auto-generated Android Assets	
-/[Aa]ssets/[Ss]treamingAssets/aa.meta	
-/[Aa]ssets/[Ss]treamingAssets/aa/*
